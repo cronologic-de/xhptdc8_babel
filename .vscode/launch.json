@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'xhptdc8_readout'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=xhptdc8_readout",
+                    "--package=xhptdc8_readout"
+                ],
+                "filter": {
+                    "name": "xhptdc8_readout",
+                    "kind": "bin"
+                }
+            },
+            "args": ["-b", "-c", "file1", "file2"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'xhptdc8_readout'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=xhptdc8_readout",
+                    "--package=xhptdc8_readout"
+                ],
+                "filter": {
+                    "name": "xhptdc8_readout",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
