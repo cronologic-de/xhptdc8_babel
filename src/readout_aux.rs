@@ -3,7 +3,7 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-include!("../target/debug/build/xhptdc8_readout-ea3f969d5d933e2a/out/bindings.rs");
+include!("../target/debug/build/xhptdc8_readout-2fec4d75702f6b5b/out/bindings.rs");
 
 use clap::{Arg, App};
 use std::os::raw ;
@@ -28,7 +28,7 @@ pub fn init_globals() -> i32
     unsafe {
         g_mgr = xhptdc8_init(&mut params, &mut error_code, &mut error_message);
         if g_mgr == ptr::null_mut() || error_code != XHPTDC8_OK.try_into().unwrap() {
-            println!("Error initializing xHPTDC8 Driver.") ;
+            println!("{}", "Error".red().bold()) ;
             return -1
         }
     }
@@ -41,7 +41,7 @@ pub fn init_globals() -> i32
  *  0: No Error
  */
 pub fn process_command_line(output_file: &mut String, is_binary: &mut bool, hits_no: &mut i64,
-    yaml_files_names: &mut Vec<String>) -> i32 
+    yaml_files_names: &mut Vec<String>, files_no: &mut i32) -> i32 
 {
     let matches = App::new("xHPTDC8 Readout Tool")
         .about("Where users can gather data directly from the device to test it without having to write specific code.")
@@ -85,17 +85,22 @@ pub fn process_command_line(output_file: &mut String, is_binary: &mut bool, hits
     }
 
     // Get hits number 
+    *hits_no = 10000 ;
     if let Some(n) = matches.value_of("HITS_NO") {
         *hits_no = n.parse::<i64>().unwrap();
-    } else {
-        *hits_no = 10000 ;
     }
 
+    // Get files number
+    *files_no = 1 ;
+    if let Some(n) = matches.value_of("HITS_NO") {
+        *files_no = n.parse::<i32>().unwrap();
+    } 
+
     // Get output file format
+    *is_binary = false ;
     match matches.occurrences_of("BINARY") {
-        0 => { *is_binary = false },
-        1 => { *is_binary = true  },
-        _ => { *is_binary = false } 
+        1 => { *is_binary = true  }
+        _ => {} 
     }
 
     // Get configuration files
@@ -116,13 +121,16 @@ pub fn process_command_line(output_file: &mut String, is_binary: &mut bool, hits
  */
 pub fn display_devices_serials(error_code: &mut i32, error_message: *mut *const raw::c_char) -> i32 {
     let devices_count: i32; 
+
+    println!("");
     unsafe {
         devices_count = xhptdc8_count_devices(error_code, error_message) ;
         if devices_count <=0 { 
+            println!("No devices found... {}", "Error".red().bold()) ;
             return devices_count ;
         } 
     }
-	println!("\n{} {}", "Installed Devices Serials for TDC(s):".blue(), 
+	println!("{} {}", "Installed Devices Serials for TDC(s):".blue(), 
         devices_count.to_string().white()) ;
 
 	for device_index in 0..devices_count {
@@ -145,13 +153,12 @@ pub fn get_device_serial(device_index: i32) -> f32 {
     let error_code: i32 ;
     unsafe {
         error_code = xhptdc8_get_static_info(g_mgr, device_index, &mut static_info) ;
+        if error_code != XHPTDC8_OK.try_into().unwrap() {
+            println!("Error getting device static information: {}", error_code.to_string().red().bold());
+            return -1.0 ;
+        }
     }
-	if error_code == XHPTDC8_OK.try_into().unwrap() {
-		return fixed824_to_float(static_info.board_serial) ;
-	} else {
-		println!("Error getting device static information: {}", error_code);
-		return -1.0 ;
-	}
+    return fixed824_to_float(static_info.board_serial) ;
 }
 
 fn fixed824_to_float(fixed_val: i32) -> f32 {
@@ -172,23 +179,51 @@ pub fn display_about() {
  *  init_golobals() is called, and g_mngr is valid
  */
 pub fn apply_yamls(yaml_files_names: Vec<String>) -> i32 {
+    let mut ret : i32;
+    let mut cfg = xhptdc8_manager_configuration::default();
+
     if yaml_files_names.len() == 0 {
         return 0 ;
     }
-    println!("\nConfiguring device using YAML file(s)") ;
+    
+    println!("") ;
+    println!("Configuring device using YAML file(s)") ;
+    unsafe {
+        ret = xhptdc8_get_default_configuration(g_mgr, &mut cfg) ;
+        if  ret != XHPTDC8_OK.try_into().unwrap() {
+            print!(" {}: {}\n", "Error".red().bold(), ret.to_string());
+            return -1;
+        }
+    }
+    
+    // Apply all YAML files on cfg
     for (_, file_name) in yaml_files_names.iter().enumerate() {
         print!("File {}...", file_name);    
         let yaml_string = fs::read_to_string(file_name)
             .expect("Something went wrong reading the YAML file");    
         let yaml_string_c: *const raw::c_char = yaml_string.as_ptr() as *const raw::c_char;
         unsafe {
-            let mut cfg = xhptdc8_manager_configuration::default();
-            xhptdc8_get_default_configuration(g_mgr, &mut cfg);
-            xhptdc8_apply_yaml(&mut cfg, yaml_string_c);
-            xhptdc8_configure(g_mgr, &mut cfg);             
+            ret = xhptdc8_apply_yaml(&mut cfg, yaml_string_c);
+            if  ret < 0 {
+                print!(" {}: {}", "Error".red().bold(), ret.to_string());
+                return -1;
+            }
         }
-        print!(" {}\n", "Done".green().bold());    
+        print!(" {}", "Parsed".green().bold());    
+        println!("") ;
     }
+
+    // Apply configuration on devices
+    unsafe {
+        ret = xhptdc8_configure(g_mgr, &mut cfg);             
+        if  ret != XHPTDC8_OK.try_into().unwrap() {
+            print!(" {}: {}", "Error".red().bold(), ret.to_string());
+            return -1;
+        } else {
+            print!("{}", "Done".green().bold());    
+        }
+    }
+    println!("") ;
     return 1 ;
 }
 

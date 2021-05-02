@@ -11,6 +11,8 @@ edition = "2018"
 clap = "2.33.3"
 yaml-rust = "0.4"
 colored = "2"
+indicatif = {version = "*", features = ["rayon"]}
+
 
 [build-dependencies]
 bindgen = "0.58.1"
