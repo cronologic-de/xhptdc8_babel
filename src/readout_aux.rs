@@ -11,8 +11,15 @@ use std::ptr  ;
 use std::convert::TryInto ;
 use std::fs;
 use colored::* ;
+use indicatif::ProgressBar;
+use std::fs::File;
+use std::fmt;
+use std::io::Write;
 
 static mut g_mgr: xhptdc8_manager = ptr::null_mut();
+const DEFAULT_HITS_NO : u32 = 10000 ;
+const DEFAULT_BUFFER_CAPACITY : usize = 5000 ;
+const DEFAULT_FILES_NO : u32 = 1 ;
 
 /**
  * @returns: 
@@ -39,9 +46,10 @@ pub fn init_globals() -> i32
 /**
  * @returns: 
  *  0: No Error
+ *  -1: Error
  */
-pub fn process_command_line(output_file: &mut String, is_binary: &mut bool, hits_no: &mut i64,
-    yaml_files_names: &mut Vec<String>, files_no: &mut i32) -> i32 
+pub fn process_command_line(output_file: &mut String, is_binary: &mut bool, hits_no: &mut u32,
+    yaml_files_names: &mut Vec<String>, files_no: &mut u32) -> i32 
 {
     let matches = App::new("xHPTDC8 Readout Tool")
         .about("Where users can gather data directly from the device to test it without having to write specific code.")
@@ -50,15 +58,15 @@ pub fn process_command_line(output_file: &mut String, is_binary: &mut bool, hits
             .short("o")
             .long("output")
             .value_name("FILE")
-            .help("The file to which the output will be written. Default is \"output.csv\"")
-            .takes_value(true))
+            .takes_value(true)
+            .help("The file to which the output will be written. Default is \"output.csv\""))
         .arg(Arg::with_name("CONFIG_FILE")
             .short("c")
             .long("config")
             .value_name("YAML_FILE")
             .multiple(true)
-            .help("A list of YAML files for the configuration.")
-            .takes_value(true))
+            .takes_value(true)
+            .help("A list of YAML files for the configuration."))
         .arg(Arg::with_name("BINARY")
             .short("b")
             .long("binary")
@@ -71,9 +79,11 @@ pub fn process_command_line(output_file: &mut String, is_binary: &mut bool, hits
             .short("n")
             .long("hitsno")
             .help("The number of hits per file. Default is 10,000."))
-        .arg(Arg::with_name("NO_FILES")
+        .arg(Arg::with_name("FILES_NO")
             .short("f")
             .long("filesno")
+            .value_name("NUMBER")
+            .takes_value(true)
             .help("The number of files to be written. Default is 0."))
         .get_matches();
 
@@ -81,19 +91,27 @@ pub fn process_command_line(output_file: &mut String, is_binary: &mut bool, hits
     if let Some(f) = matches.value_of("OUTPUT_FILE") {
         *output_file = f.to_string() ;
     } else {
-        *output_file = "output.csv".to_string() ;
+        *output_file = "output".to_string() ;   // With no extension, will be set later on
     }
 
     // Get hits number 
-    *hits_no = 10000 ;
+    *hits_no = DEFAULT_HITS_NO ;
     if let Some(n) = matches.value_of("HITS_NO") {
-        *hits_no = n.parse::<i64>().unwrap();
+        *hits_no = n.parse::<u32>().unwrap();
+        if *hits_no == 0 {
+            println!("{}", "zero Hits Numeber is not accepted".red()) ;
+            return -1 ;
+        }
     }
 
     // Get files number
-    *files_no = 1 ;
-    if let Some(n) = matches.value_of("HITS_NO") {
-        *files_no = n.parse::<i32>().unwrap();
+    *files_no = DEFAULT_FILES_NO ;
+    if let Some(n) = matches.value_of("FILES_NO") {
+        *files_no = n.parse::<u32>().unwrap();
+        if *files_no == 0 {
+            println!("{}", "zero Files Numeber is not accepted".red()) ;
+            return -1 ;
+        }
     } 
 
     // Get output file format
@@ -185,7 +203,7 @@ pub fn apply_yamls(yaml_files_names: Vec<String>) -> i32 {
     if yaml_files_names.len() == 0 {
         return 0 ;
     }
-    
+        
     println!("") ;
     println!("Configuring device using YAML file(s)") ;
     unsafe {
@@ -227,12 +245,174 @@ pub fn apply_yamls(yaml_files_names: Vec<String>) -> i32 {
     return 1 ;
 }
 
+fn _write_to_output_file(mut file: &File, is_binary: bool, remaining_file_elements_count: &mut i32, 
+    hits_buffer: &[TDCHit], buffer_start_index: &mut i32, buffer_elements_count: i32, 
+    bar : &indicatif::ProgressBar, total_target_hits_no : u32, total_written_hits_no: &mut u32) -> i32 {
+    
+    let mut output_value_to_write = String::new() ;    
+    let hit_index : i32 = *buffer_start_index ;
+        *total_written_hits_no += 1 ;
+    while   (hit_index < buffer_elements_count) // Elements still found in the buffer to be written
+        &&  (*remaining_file_elements_count >0) // File still have space for a new element
+    {
+        if is_binary {
+            output_value_to_write = format!("{:b}\n", hits_buffer[hit_index as usize]) ;
+        } else {
+            output_value_to_write = format!("{},{},{},{}\n", 
+                                hits_buffer[hit_index as usize].time,
+                                hits_buffer[hit_index as usize].channel,
+                                hits_buffer[hit_index as usize].type_,
+                                hits_buffer[hit_index as usize].bin) 
+        }
+        //println!("Value to write {}", output_value_to_write) ;
+        match file.write_all(output_value_to_write.as_bytes()) {
+            Err(why) => panic!("Couldn't write to file: {}", why),
+            Ok(file) => file,
+        }
+        *remaining_file_elements_count -= 1 ;
+        *total_written_hits_no += 1 ;
+        bar.set_position((100.0 * (*total_written_hits_no as f32 / total_target_hits_no as f32)) as u64) ;
+//        println!("total_written_hits_no {}, Position {}", *total_written_hits_no, 
+//            (100.0 * (*total_written_hits_no as f32 / total_target_hits_no as f32)) as u64);
+    }
+    println!("total_target_hits_no: {}", total_target_hits_no);
+    return 1 ;
+}
+impl fmt::Binary for TDCHit {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:b}{:b}{:b}{:b}", self.time, self.channel, self.type_, self.bin)
+    }
+}
+
+pub fn acquire(output_file: String, is_binary: bool, hits_no: u32,
+     files_no: u32) -> i32 {
+
+    println!("\nAcquiring hits...") ;  
+
+    // ____________________
+    // Initialize variables
+    let total_target_hits_no : u32  = hits_no * files_no;
+    let mut total_written_hits_no: u32 = 0 ;
+    const buffer_capacity : usize = DEFAULT_BUFFER_CAPACITY;
+    let mut hits_buffer = [TDCHit::default(); buffer_capacity];
+    let mut buffer_start_index : i32 = 0 ;
+    let mut started_capture : bool = false ;
+    let mut read_elements_count : raw::c_int = 0 ;
+    let mut remaining_file_elements_count = hits_no as i32;
+    let x : xhptdc8_manager_configuration =xhptdc8_manager_configuration::default() ;
+    let bar = ProgressBar::new(100);
+
+    // ____________________
+    // Loop on output files
+    for file_index in 0..files_no {
+        // _________________
+        // Set the file name
+        let mut output_file_name = String::new();
+        if files_no > 1 {
+            if is_binary {
+                output_file_name = format!("{}{:04}.dat", output_file, file_index+1) ;
+            } else {
+                output_file_name = format!("{}{:04}.csv", output_file, file_index+1) ;
+            }
+        } else {
+            if is_binary {
+                output_file_name = format!("{}.dat", output_file) ;
+            } else {
+                output_file_name = format!("{}.csv", output_file) ;
+            }
+        }
+        // ________________________________________________________
+        // Check last if buffer has values remaining from last file
+        if read_elements_count > buffer_start_index {
+            // written_elements_no = write_hits_buffer_into_file(output_file_name, hits_buffer, buffer_start_index, buffer_elements_count) ;
+            // if written_elements_no < 0 {
+            // }
+            // bar.inc(written_elements_no/total_target_hits_no);
+            // _write_to_output_file(&file, is_binary, &hits_buffer, read_elements_count, &bar) ;
+        }
+
+        // ______________________________________
+        // Start capturing if not already started
+        unsafe {
+            if !started_capture {
+                print!("Starting capture...");
+                match xhptdc8_start_capture(g_mgr) {
+                4 => panic!("{}: {}", "Error start capturing".red(), 4.to_string().red()) ,
+                17 => panic!("{}: {}", "Error start capturing".red(), 17.to_string().red()) ,
+                _ => { started_capture = true; println!(" {}", "Done".green().bold()); },
+                }
+            }
+        }
+        // ______________________
+        // Create the output file
+        let mut file = match File::create(&output_file_name) {
+            Err(why) => panic!("{} {}: {}", 
+                    "Couldn't create".red(), output_file_name.red(), why.to_string().red()),
+            Ok(file) => file,
+        };
+        // ____________________________________________
+        // Loop on read_hits to fill in the output file
+        buffer_start_index = 0 ;
+        loop {  
+            // _________
+            // Read hits
+            unsafe {
+                // Pass hits_buffer array not a vector, as it's not guaranteed to be sequential in memory
+                read_elements_count = xhptdc8_read_hits(g_mgr, hits_buffer.as_mut_ptr(), DEFAULT_BUFFER_CAPACITY as u64) ;
+                //$$ println!("read_elements_count: {}", read_elements_count);
+                if read_elements_count < 0 {
+                    bar.finish();
+                    println!("{}: {}", "Error reading hits".red(), read_elements_count.to_string().red());
+                    if started_capture {
+                        xhptdc8_stop_capture(g_mgr) ;
+                    }
+                    return -1 ;
+                }
+            }
+            _write_to_output_file(
+                // File Parameters
+                &file, is_binary, &mut remaining_file_elements_count, 
+                // Buffer Parameters
+                &hits_buffer, &mut buffer_start_index, read_elements_count, 
+                // Progerss Bar Parameters
+                &bar, total_target_hits_no, &mut total_written_hits_no) ;
+
+            // ___________________________
+            // Check that the file is full
+            if remaining_file_elements_count == 0 {
+            // File is full
+                break ;
+            } else {
+            // File is not full, still need to read more hits    
+                if total_target_hits_no >= total_target_hits_no {
+                // No more hits to read, target is achieved
+                    break ;    
+                } else {
+                // Output file is not full, and target hits are not achieved
+                    // Read more hits, loop
+                }
+            }
+        }
+    }
+
+    // _______
+    // Cleanup
+    if started_capture {
+        unsafe {
+            xhptdc8_stop_capture(g_mgr) ;
+        }
+    }
+    // println!("{} {} {} {}", output_file, is_binary, hits_no, files_no) ;
+    // bar.finish(); Not needed, it also duplicates the bar line
+    return 1 ;
+}
+
 pub fn clean_up() {
     print!("\nCleaning up...") ;
     unsafe {
         xhptdc8_close(g_mgr);
     }
-    print!(" {}\n", "Done".green().bold());    
+    println!(" {}", "Done".green().bold());    
 }
 
 pub fn display_footer() {
