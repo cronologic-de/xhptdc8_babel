@@ -1,14 +1,43 @@
 extern crate bindgen;
 
-use std::env;
 use std::path::PathBuf;
+
+#[cfg(target_arch="x86")]
+static RUSTC_LINK_SEARCH : &str = "cargo:rustc-link-search=../../lib/x86dummy/" ;
+
+#[cfg(target_arch="x86")]
+static RUSTC_DRIVER_LIB : &str = "cargo:rustc-link-lib=xhptdc8_driver" ;
+
+#[cfg(target_arch="x86")]
+static RUSTC_UTIL_LIB : &str = "cargo:rustc-link-lib=xhptdc8_util" ;
+
+#[cfg(target_arch="x86")]
+static BINDINGS_FILE_NAME : &str = "bindings.rs" ;
+
+#[cfg(target_arch="x86")]
+static BINDINGS_DIR_NAME : &str = "./src/bindings/x86/" ;
+
+#[cfg(target_arch="x86_64")]
+static RUSTC_LINK_SEARCH : &str = "cargo:rustc-link-search=../../lib/x64dummy/" ;
+
+#[cfg(target_arch="x86_64")]
+static RUSTC_DRIVER_LIB : &str = "cargo:rustc-link-lib=xhptdc8_driver_64" ;
+
+#[cfg(target_arch="x86_64")]
+static RUSTC_UTIL_LIB : &str = "cargo:rustc-link-lib=xhptdc8_util_64" ;
+
+#[cfg(target_arch="x86_64")]
+static BINDINGS_FILE_NAME : &str = "bindings_64.rs" ;
+
+#[cfg(target_arch="x86_64")]
+static BINDINGS_DIR_NAME : &str = "./src/bindings/x64/" ;
 
 fn main() {
     // Tell cargo to tell rustc to link the system bzip2
     // shared library.
-    println!("cargo:rustc-link-search=../../lib/x64dummy/");
-    println!("cargo:rustc-link-lib=xhptdc8_driver_64");
-    println!("cargo:rustc-link-lib=xhptdc8_util_64");
+    println!("{}", RUSTC_LINK_SEARCH);
+    println!("{}", RUSTC_DRIVER_LIB);
+    println!("{}", RUSTC_UTIL_LIB);
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
     println!("cargo:rerun-if-changed=wrapper.h");
@@ -28,9 +57,9 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
-    // Write the bindings to the $OUT_DIR/bindings.rs file.
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    // Write the bindings to the ./src/bindings/bindings.rs file.
+    let out_path = PathBuf::from(BINDINGS_DIR_NAME);
     bindings
-        .write_to_file(out_path.join("bindings.rs"))
+        .write_to_file(out_path.join(BINDINGS_FILE_NAME))
         .expect("Couldn't write bindings!");
 }

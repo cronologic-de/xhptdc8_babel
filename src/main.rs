@@ -40,10 +40,8 @@ fn main() {
     }
 
     readout_aux::apply_yamls(yaml_files_names) ;
- 
-    readout_aux::acquire(output_file, is_binary, hits_no, files_no) ;
+    readout_aux::acquire(&mut output_file, is_binary, hits_no, files_no) ;
     readout_aux::clean_up() ;
-
     readout_aux::display_footer() ;
 }
 
