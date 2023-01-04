@@ -1,0 +1,698 @@
+name: Build All Projects
+#
+# Every build job:
+# - Is responsible for building one project, and committing the output 
+#   to the repository.
+# - Needs a relevant `Check-xyz` job to check if pushed files are concerned 
+#   files or NOT, if NOT then every step in the job will be bypassed.
+# - Needs the previous (orderd as mentioned in the file here) build job to 
+#   guarantee a sequential run.
+#   Reason: since every job commits to the repository, if these jobs run concurrently
+#   then commit fails. There is no "technical" dependnecy between them.
+#   One drawback that if a build job fails, next jobs won't run.
+#
+# You can convert Configuration type to build (e.g. BUILD_CONFIGURATION) to a build matrix 
+# if you need coverage of multiple configuration types.
+# https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+
+#on: workflow_dispatch
+on: 
+  push:
+    paths: # Collected from paths of all jobs below
+    - 'lib/include/**'
+    - 'dummy/**'
+    - 'go/info/src-cgo/**'
+    - 'rust/readout/**'
+    - 'util/util/**'
+    - 'util/util_test/**'
+
+jobs:
+  # ===========================================================================
+  #
+  # Upon any change in sub files of ./dummy, the action does the following:
+  # 1. Builds the Dummy Library Release x64 & x86 DLL & Lib, using MSBuild
+  # 2. Copies the DLLs & Libs to the corresponding folders on ./lib 
+  #    repository folder, and commits
+  #
+  Check-Build-Dummy-Library-Using-MSBuild:
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      ok_to_proceed: ${{ steps.check.outputs.ok_to_proceed_val }}
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      
+    - name: Get changed files in concerned folder(s)
+      id: changed-files-specific
+      uses: tj-actions/changed-files@v35
+      with:
+        files: |
+          lib/include/**
+          dummy/**
+          
+    # Check if any file(s) in the concerned folder changed
+    - name: Check
+      id: check
+      if: steps.changed-files-specific.outputs.any_changed == 'false'
+      run: |
+        echo "No concerned files changed, suppressing processing."
+        echo "ok_to_proceed_val=N" >> $GITHUB_OUTPUT
+
+  # ___________________________________________________________________________
+  #
+  Build-Dummy-Library-Using-MSBuild:
+    needs: Check-Build-Dummy-Library-Using-MSBuild
+    runs-on: windows-latest
+    defaults:
+       run:
+         shell: powershell
+    env: 
+          BUILD_CONFIGURATION: Release
+          SOLUTION_FILE_PATH: .\dummy\msvscpp\
+          X86_OUTPUT_DIR: .\dummy\msvscpp\Release\
+          X86_REPO_LIB_PTH: .\lib\x86dummy\
+          X64_OUTPUT_DIR: .\dummy\msvscpp\x64\Release\
+          X64_REPO_LIB_PTH: .\lib\x64dummy\
+          X86_DUMMY_DLL_NAME: xhptdc8_driver.dll
+          X86_DUMMY_LIB_NAME: xhptdc8_driver.lib 
+          X64_DUMMY_DLL_NAME: xhptdc8_driver_64.dll
+          X64_DUMMY_LIB_NAME: xhptdc8_driver_64.lib
+          # Internal
+          X86_REPO_LIB_PTH_COMMIT: ./lib/x86dummy/
+          X64_REPO_LIB_PTH_COMMIT: ./lib/x64dummy/
+          COMMIT_MSG: 'Internal build due to Dummy-Library code change' 
+        
+    steps:
+    - name: echo Suppress Status if Needed
+      if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed == 'N' }}
+      run: |
+        echo "Job execution processing is suppressed for no cencerned files are changed."
+
+    - name: Checkout Code
+      if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: actions/checkout@v3
+      # Inprovement: Uncomment & adjust if we can check out only: ./lib & ./dummy instead of the whole repository
+      # with:
+      #  path: ./dummy ./lib
+      
+    - name: Add MSBuild to PATH
+      if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Build Release x86
+      if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed != 'N' }}
+      env:
+        BUILD_PLATFORM: x86
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: |
+        msbuild ${{env.SOLUTION_FILE_PATH}} /m /property:Configuration=Release /property:Platform=${{env.BUILD_PLATFORM}}
+        Copy-Item ${{env.X86_OUTPUT_DIR}}${{env.X86_DUMMY_DLL_NAME}} -Destination ${{env.X86_REPO_LIB_PTH}}
+        Copy-Item ${{env.X86_OUTPUT_DIR}}${{env.X86_DUMMY_LIB_NAME}} -Destination ${{env.X86_REPO_LIB_PTH}}
+        
+    - name: Commit x86 DLL
+      if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X86_REPO_LIB_PTH_COMMIT}}${{env.X86_DUMMY_DLL_NAME}} --force
+
+    - name: Commit x86 Lib
+      if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X86_REPO_LIB_PTH_COMMIT}}${{env.X86_DUMMY_LIB_NAME}} --force
+
+    - name: Build Release x64
+      if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed != 'N' }}
+      env:
+        BUILD_PLATFORM: x64
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        msbuild ${{env.SOLUTION_FILE_PATH}} /m /property:Configuration=Release /property:Platform=${{env.BUILD_PLATFORM}}
+        Copy-Item ${{env.X64_OUTPUT_DIR}}${{env.X64_DUMMY_DLL_NAME}} -Destination ${{env.X64_REPO_LIB_PTH}}
+        Copy-Item ${{env.X64_OUTPUT_DIR}}${{env.X64_DUMMY_LIB_NAME}} -Destination ${{env.X64_REPO_LIB_PTH}}
+  
+    - name: Commit x64 DLL
+      if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X64_REPO_LIB_PTH_COMMIT}}${{env.X64_DUMMY_DLL_NAME}} --force
+          
+    - name: Commit x64 Lib
+      if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X64_REPO_LIB_PTH_COMMIT}}${{env.X64_DUMMY_LIB_NAME}} --force
+
+  # ===========================================================================
+  #
+  Check-Info-Tool-Build:
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      ok_to_proceed: ${{ steps.check.outputs.ok_to_proceed_val }}
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      
+    - name: Get changed files in concerned folder(s)
+      id: changed-files-specific
+      uses: tj-actions/changed-files@v35
+      with:
+        files: |
+          lib/include/**
+          go/info/src-cgo/** 
+        
+    # Check if any file(s) in the concerned folder changed
+    - name: Check
+      id: check
+      if: steps.changed-files-specific.outputs.any_changed == 'false'
+      run: |
+        echo "No concerned files changed, suppressing processing."
+        echo "ok_to_proceed_val=N" >> $GITHUB_OUTPUT
+  
+  # ___________________________________________________________________________
+  #
+  Info-Tool-Build:
+    runs-on: windows-latest
+    needs: [Check-Info-Tool-Build, Build-Dummy-Library-Using-MSBuild]
+    defaults:
+       run:
+         shell: cmd
+         
+    env: 
+      SOLUTION_FILE_PATH: .\go\info\src-cgo\
+      COMMIT_MSG: 'Internal build due to code change' 
+      X64_EXE_NAME: xhptdc8_info_64.exe
+      X64_EXE_REPO_PATH: .\go\bin\x64\
+      X86_EXE_NAME: xhptdc8_info.exe
+      X86_EXE_REPO_PATH: .\go\bin\x86\
+          
+    steps:
+    - name: echo Suppress Status if Needed
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed == 'N' }}
+      run: |
+        echo "Job execution processing is suppressed for no cencerned files are changed."
+        
+    - name: Checkout Code
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: actions/checkout@v3
+              
+    - name: Install Go
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.16.x' # The Go version to download (if necessary) and use.
+
+    - name: Display Versions 
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: |
+        go env GOOS GOARCH CGO_ENABLED CC
+        gcc --version
+
+    # In the build, cd into the folder to avoid 'Not in GOROOT' error, then cd back again
+    - name: Build 64 EXE
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: |
+        cd go\info\src-cgo 
+        go build -o ${{env.X64_EXE_NAME}} .\xhptdc8_info.go .\info_aux.go
+        cd ..\..\..\       
+    
+    - name: Copy x64 EXE to Repository
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: |
+        mkdir -p ${{env.X64_EXE_REPO_PATH}} # Dir might exists from previous job
+        dir ${{env.X64_EXE_REPO_PATH}}
+        copy ${{env.SOLUTION_FILE_PATH}}${{env.X64_EXE_NAME}} ${{env.X64_EXE_REPO_PATH}}${{env.X64_EXE_NAME}}
+        
+    - name: Commit x64 EXE
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+        author_name: Internal Workflow Action
+        message: ${{env.COMMIT_MSG}}
+        add: ${{env.X64_EXE_REPO_PATH}}${{env.X64_EXE_NAME}} --force
+
+    # Build x86 Version 
+    # Install gcc 686
+    - name: Install MinGW x86 (gcc i686)
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: egor-tensin/setup-mingw@v2
+      with:
+        platform: x86
+
+    - name: List GOOS GOARCH
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: go tool dist list
+      
+    # In the build, cd into the folder to avoid 'Not in GOROOT' error, then cd back again
+    - name: Build 86 EXE
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: |
+        set GOARCH=386
+        set CGO_ENABLED=1
+        set GOGCCFLAGS=-m32 -mthreads -fmessage-length=0 -fdebug-prefix-map=C:\Users\RUNNER~1\AppData\Local\Temp\go-build3768696574=/tmp/go-build -gno-record-gcc-switches
+        go env GOOS GOARCH CGO_ENABLED CC GOGCCFLAGS
+        gcc --version
+        cd go\info\src-cgo 
+        go build -o ${{env.X86_EXE_NAME}} .\xhptdc8_info.go .\info_aux.go
+        cd ..\..\..\       
+        Copy ${{env.SOLUTION_FILE_PATH}}${{env.X86_EXE_NAME}} ${{env.X86_EXE_REPO_PATH}}${{env.X86_EXE_NAME}}
+        
+    - name: Commit x86 EXE
+      if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X86_EXE_REPO_PATH}}${{env.X86_EXE_NAME}} --force
+
+  # ===========================================================================
+  #
+  Check-Readout-Tool-Build:
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      ok_to_proceed: ${{ steps.check.outputs.ok_to_proceed_val }}
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      
+    - name: Get changed files in concerned folder(s)
+      id: changed-files-specific
+      uses: tj-actions/changed-files@v35
+      with:
+        files: |
+          lib/include/**
+          rust/readout/**
+        
+    # Check if any file(s) in the concerned folder changed
+    - name: Check
+      id: check
+      if: steps.changed-files-specific.outputs.any_changed == 'false'
+      run: |
+        echo "No concerned files changed, suppressing processing."
+        echo "ok_to_proceed_val=N" >> $GITHUB_OUTPUT
+        
+  # ___________________________________________________________________________
+  #
+  Readout-Tool-Build:
+    runs-on: windows-latest
+    needs: [Check-Readout-Tool-Build, Info-Tool-Build]
+    defaults:
+      run:
+        shell: cmd
+    env: 
+      CARGO_TERM_COLOR: always
+      SOLUTION_FILE_PATH: .\rust\readout
+      
+      X86_OUTPUT_DIR_NAME: Build_x86
+      X64_OUTPUT_DIR_NAME: Build_x64
+      X86_OUTPUT_DIR: .\Build_x86\release\
+      X64_OUTPUT_DIR: .\Build_x64\release\
+      X86_EXE_REPO_DIR: .\rust\bin\x86\
+      X64_EXE_REPO_DIR: .\rust\bin\x64\
+      X86_BINDINGS_REPO_DIR: .\rust\readout\src\bindings\x86\
+      X64_BINDINGS_REPO_DIR: .\rust\readout\src\bindings\x64\
+      X86_EXE_NAME: xhptdc8_readout.exe
+      X64_EXE_NAME: xhptdc8_readout.exe
+      X86_EXE_REPO_NAME: xhptdc8_readout.exe
+      X64_EXE_REPO_NAME: xhptdc8_readout_64.exe
+      X86_BINDINGS_RS_NAME: bindings.rs
+      X64_BINDINGS_RS_NAME: bindings.rs
+      X86_BINDINGS_RS_REPO_NAME: bindings.rs
+      X64_BINDINGS_RS_REPO_NAME: bindings_64.rs
+      X86_LLVM_BIN_PATH: C:\Program Files (x86)\LLVM\bin
+      COMMIT_MSG: 'Internal build due to code change' 
+        
+    steps:
+    - name: echo Suppress Status if Needed
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed == 'N' }}
+      run: |
+        echo "Job execution processing is suppressed for no cencerned files are changed."
+        
+    - name: Checkout Code
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: actions/checkout@v3
+    
+    - name: Install LLVM and Clang, x64
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "10.0"
+        directory: ${{ runner.temp }}/llvm    
+        
+#    Uncomment the following item if you need to display more information
+#    - name: Display Environment Settings
+#      run: |
+#        rustup show
+         
+    # Assuming that 'stable-x86_64-pc-windows-msvc' is default
+    - name: Build x64 Release
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: | 
+        clang --version
+        SET LIBCLANG_PATH=%LD_LIBRARY_PATH:~0,-1%
+        cd ${{env.SOLUTION_FILE_PATH}}
+        cargo build --target-dir=${{env.X64_OUTPUT_DIR_NAME}} --release --verbose
+        
+    # Copy EXE 
+    - name: Copy x64 Files to Repository
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: |
+        copy ${{env.SOLUTION_FILE_PATH}}\${{env.X64_OUTPUT_DIR}}${{env.X64_EXE_NAME}} ${{env.X64_EXE_REPO_DIR}}${{env.X64_EXE_REPO_NAME}}
+        
+    - name: Commit x64 EXE
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X64_EXE_REPO_DIR}}${{env.X64_EXE_REPO_NAME}} --force
+
+    - name: Commit x64 bindings
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X64_BINDINGS_REPO_DIR}}${{env.X64_BINDINGS_RS_REPO_NAME}} --force
+
+    - name: Install Target i686 and Set As Default for rustup
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: |
+        rustup show
+        rustup install stable-i686-pc-windows-msvc
+        rustup target add stable-i686-pc-windows-msvc
+        rustup default stable-i686-pc-windows-msvc
+        rustup show
+        
+    - name: Install LLVM Win32
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: |
+        curl https://prereleases.llvm.org/win-snapshots/LLVM-12.0.0-6923b0a7-win32.exe -o C:\Temp\LLVM_Win32.exe
+        C:\Temp\LLVM_Win32.exe /S
+    # ~20%: remove "D:\a\_temp\llvm\bin" from LLVM x64 Installation
+    
+    - name: Build x86 Release
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: | 
+        set LIBCLANG_PATH=${{env.X86_LLVM_BIN_PATH}}
+        set PATH=%PATH:~20%
+        set PATH=%PATH%;${{env.X86_LLVM_BIN_PATH}}
+        cargo --version
+        cd ${{env.SOLUTION_FILE_PATH}}
+        cargo build --target-dir=${{env.X86_OUTPUT_DIR_NAME}} --release --verbose
+        
+    # Copy EXE 
+    - name: Copy x86 Files to Repository
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: |
+        copy ${{env.SOLUTION_FILE_PATH}}\${{env.X86_OUTPUT_DIR}}${{env.X86_EXE_NAME}} ${{env.X86_EXE_REPO_DIR}}${{env.X86_EXE_REPO_NAME}}
+        
+    - name: Commit x86 EXE
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X86_EXE_REPO_DIR}}${{env.X86_EXE_REPO_NAME}} --force
+
+    - name: Commit x86 bindings
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X86_BINDINGS_REPO_DIR}}${{env.X86_BINDINGS_RS_REPO_NAME}} --force
+          
+  # ===========================================================================
+  #
+  Check-Util-Library-MSBuild:
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      ok_to_proceed: ${{ steps.check.outputs.ok_to_proceed_val }}
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      
+    - name: Get changed files in concerned folder(s)
+      id: changed-files-specific
+      uses: tj-actions/changed-files@v35
+      with:
+        files: |
+          lib/include/**
+          util/util/**
+        
+    # Check if any file(s) in the concerned folder changed
+    - name: Check
+      id: check
+      if: steps.changed-files-specific.outputs.any_changed == 'false'
+      run: |
+        echo "No concerned files changed, suppressing processing."
+        echo "ok_to_proceed_val=N" >> $GITHUB_OUTPUT
+
+  # ___________________________________________________________________________
+  #
+  Util-Library-MSBuild:
+    runs-on: windows-latest
+    needs: [Check-Util-Library-MSBuild, Readout-Tool-Build]
+    defaults:
+       run:
+         shell: powershell
+    env: 
+      BUILD_CONFIGURATION: Release
+      SOLUTION_FILE_PATH: .\util\util\msvscpp # The util library only, not xhptdc8_util_projects solution
+      X86_OUTPUT_DIR: .\util\util\msvscpp\Release\ # Can't use env context (e.g. SOLUTION_FILE_PATH) here, only in jobs, rewrite the path again
+      X86_REPO_LIB_PTH: .\lib\x86\
+      X86_DUMMY_REPO_LIB_PTH: .\lib\x86dummy\
+      X64_OUTPUT_DIR: .\util\util\msvscpp\x64\Release\
+      X64_REPO_LIB_PTH: .\lib\x64\
+      X64_DUMMY_REPO_LIB_PTH: .\lib\x64dummy\
+      X86_DLL_NAME: xhptdc8_util.dll
+      X86_LIB_NAME: xhptdc8_util.lib 
+      X64_DLL_NAME: xhptdc8_util_64.dll
+      X64_LIB_NAME: xhptdc8_util_64.lib
+      X86_REPO_LIB_PTH_COMMIT: ./lib/x86/             # Equal to X86_REPO_LIB_PTH, with '/' instead of '\'
+      X86_DUMMY_REPO_LIB_PTH_COMMIT: ./lib/x86dummy/  # Equal to X86_DUMMY_REPO_LIB_PTH, with '/' instead of '\'
+      X64_REPO_LIB_PTH_COMMIT: ./lib/x64/             # Equal to X64_REPO_LIB_PTH, with '/' instead of '\'
+      X64_DUMMY_REPO_LIB_PTH_COMMIT: ./lib/x64dummy/  # Equal to X64_DUMMY_REPO_LIB_PTH, with '/' instead of '\'
+      COMMIT_MSG: 'Internal build due to code change' 
+
+    steps:
+    - name: echo Suppress Status if Needed
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed == 'N' }}
+      run: |
+        echo "Job execution processing is suppressed for no cencerned files are changed."
+        
+    - name: Checkout Code
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: actions/checkout@v3
+  
+    - name: Add MSBuild to PATH
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Build Release x86
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      env:
+        BUILD_PLATFORM: x86
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: |
+        msbuild ${{env.SOLUTION_FILE_PATH}} /m /property:Configuration=Release /property:Platform=${{env.BUILD_PLATFORM}}
+        Copy-Item ${{env.X86_OUTPUT_DIR}}${{env.X86_DLL_NAME}} -Destination ${{env.X86_REPO_LIB_PTH}}
+        Copy-Item ${{env.X86_OUTPUT_DIR}}${{env.X86_LIB_NAME}} -Destination ${{env.X86_REPO_LIB_PTH}}
+        Copy-Item ${{env.X86_OUTPUT_DIR}}${{env.X86_DLL_NAME}} -Destination ${{env.X86_DUMMY_REPO_LIB_PTH}}
+        Copy-Item ${{env.X86_OUTPUT_DIR}}${{env.X86_LIB_NAME}} -Destination ${{env.X86_DUMMY_REPO_LIB_PTH}}
+        
+    - name: Commit x86 DLL
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X86_REPO_LIB_PTH_COMMIT}}${{env.X86_DLL_NAME}} --force
+
+    - name: Commit x86 DLL to Dummy Folder
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X86_DUMMY_REPO_LIB_PTH_COMMIT}}${{env.X86_DLL_NAME}} --force
+          
+    - name: Commit x86 Lib
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X86_REPO_LIB_PTH_COMMIT}}${{env.X86_LIB_NAME}} --force
+
+    - name: Commit x86 Lib to Dummy Folder
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X86_DUMMY_REPO_LIB_PTH_COMMIT}}${{env.X86_LIB_NAME}} --force
+
+    - name: Build Release x64
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      env:
+        BUILD_PLATFORM: x64
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        msbuild ${{env.SOLUTION_FILE_PATH}} /m /property:Configuration=Release /property:Platform=${{env.BUILD_PLATFORM}}
+        Copy-Item ${{env.X64_OUTPUT_DIR}}${{env.X64_DLL_NAME}} -Destination ${{env.X64_REPO_LIB_PTH}}
+        Copy-Item ${{env.X64_OUTPUT_DIR}}${{env.X64_LIB_NAME}} -Destination ${{env.X64_REPO_LIB_PTH}}
+        Copy-Item ${{env.X64_OUTPUT_DIR}}${{env.X64_DLL_NAME}} -Destination ${{env.X64_DUMMY_REPO_LIB_PTH}}
+        Copy-Item ${{env.X64_OUTPUT_DIR}}${{env.X64_LIB_NAME}} -Destination ${{env.X64_DUMMY_REPO_LIB_PTH}}
+  
+    - name: Commit x64 DLL
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X64_REPO_LIB_PTH_COMMIT}}${{env.X64_DLL_NAME}} --force
+          
+    - name: Commit x64 DLL to Dummy Folder
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X64_DUMMY_REPO_LIB_PTH_COMMIT}}${{env.X64_DLL_NAME}} --force
+          
+    - name: Commit x64 Lib
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X64_REPO_LIB_PTH_COMMIT}}${{env.X64_LIB_NAME}} --force
+
+    - name: Commit x64 Lib to Dummy Folder
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X64_DUMMY_REPO_LIB_PTH_COMMIT}}${{env.X64_LIB_NAME}} --force
+
+  # ===========================================================================
+  #
+  Check-Util-Test-MSBuild:
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      ok_to_proceed: ${{ steps.check.outputs.ok_to_proceed_val }}
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      
+    - name: Get changed files in concerned folder(s)
+      id: changed-files-specific
+      uses: tj-actions/changed-files@v35
+      with:
+        files: |
+          lib/include/**
+          util/util_test/**
+        
+    # Check if any file(s) in the concerned folder changed
+    - name: Check
+      id: check
+      if: steps.changed-files-specific.outputs.any_changed == 'false'
+      run: |
+        echo "No concerned files changed, suppressing processing."
+        echo "ok_to_proceed_val=N" >> $GITHUB_OUTPUT
+
+  # ___________________________________________________________________________
+  # 
+  Util-Test-MSBuild:
+    runs-on: windows-latest
+    needs: [Check-Util-Test-MSBuild, Util-Library-MSBuild]
+    defaults:
+       run:
+         shell: powershell
+    env: 
+      BUILD_CONFIGURATION: Release
+      SOLUTION_FILE_PATH: .\util\util_test\msvscpp # The util library only
+      X86_OUTPUT_DIR: .\util\util_test\msvscpp\Release\
+      X86_REPO_EXE_PATH: .\util\bin\x86\
+      X64_OUTPUT_DIR: .\util\util_test\msvscpp\x64\Release\
+      X64_REPO_EXE_PATH: .\util\bin\x64\
+      X86_EXE_NAME: xhptdc8_util_test.exe
+      X64_EXE_NAME: xhptdc8_util_test_64.exe
+      X86_REPO_EXE_PTH_COMMIT: ./util/bin/x86/        # Equal to X86_REPO_EXE_PATH, with '/' instead of '\'
+      X64_REPO_EXE_PTH_COMMIT: ./util/bin/x64/        # Equal to X64_REPO_EXE_PATH, with '/' instead of '\'
+      COMMIT_MSG: 'Internal build due to Util Test code change' 
+
+    steps:
+    - name: echo Suppress Status if Needed
+      if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed == 'N' }}
+      run: |
+        echo "Job execution processing is suppressed for no cencerned files are changed."
+        
+    - name: Checkout Code
+      if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: actions/checkout@v3
+  
+    - name: Add MSBuild to PATH
+      if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Build Release x86
+      if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
+      env:
+        BUILD_PLATFORM: x86
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: |
+        msbuild ${{env.SOLUTION_FILE_PATH}} /m /property:Configuration=Release /property:Platform=${{env.BUILD_PLATFORM}}
+        Copy-Item ${{env.X86_OUTPUT_DIR}}${{env.X86_EXE_NAME}} -Destination ${{env.X86_REPO_EXE_PATH}}
+        
+    - name: Commit x86 EXE
+      if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X86_REPO_EXE_PTH_COMMIT}}${{env.X86_EXE_NAME}} --force
+
+    - name: Build Release x64
+      if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
+      env:
+        BUILD_PLATFORM: x64
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        msbuild ${{env.SOLUTION_FILE_PATH}} /m /property:Configuration=Release /property:Platform=${{env.BUILD_PLATFORM}}
+        Copy-Item ${{env.X64_OUTPUT_DIR}}${{env.X64_EXE_NAME}} -Destination ${{env.X64_REPO_EXE_PATH}}
+  
+    - name: Commit x64 EXE
+      if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+          author_name: Internal Workflow Action
+          message: ${{env.COMMIT_MSG}}
+          add: ${{env.X64_REPO_EXE_PTH_COMMIT}}${{env.X64_EXE_NAME}} --force        
