@@ -187,9 +187,9 @@ jobs:
   #
   Info-Tool-Build:
     runs-on: windows-latest
-    needs: 
-      - [ Check-Info-Tool-Build ]                 # To check need to build
-      - [ Build-Dummy-Library-Using-MSBuild ]     # Guarnatee Sequential Build
+    needs: [ Check-Info-Tool-Build, Build-Dummy-Library-Using-MSBuild ]
+      # Check-Info-Tool-Build                  # To check need to build
+      # Build-Dummy-Library-Using-MSBuild      # Guarnatee Sequential Build
     defaults:
        run:
          shell: cmd
@@ -320,9 +320,9 @@ jobs:
   #
   Readout-Tool-Build:
     runs-on: windows-latest
-    needs: 
-      - [ Check-Readout-Tool-Build]   # To check need to build
-      - [ Info-Tool-Build ]           # Guarnatee Sequential Build
+    needs: [ Check-Readout-Tool-Build, Info-Tool-Build ]
+      # Check-Readout-Tool-Build   # To check need to build
+      # Info-Tool-Build            # Guarnatee Sequential Build
     defaults:
       run:
         shell: cmd
@@ -489,10 +489,10 @@ jobs:
   #
   Util-Library-MSBuild:
     runs-on: windows-latest
-    needs: 
-      - [ Check-Util-Library-MSBuild]         # To check need to build
-      - [ Readout-Tool-Build ]                # Guarnatee Sequential Build
-      - [ Build-Dummy-Library-Using-MSBuild ] # Output lib is needed for buld
+    needs: [ Check-Util-Library-MSBuild, Readout-Tool-Build, Build-Dummy-Library-Using-MSBuild ]
+      #  Check-Util-Library-MSBuild         # To check need to build
+      #  Readout-Tool-Build                 # Guarnatee Sequential Build
+      #  Build-Dummy-Library-Using-MSBuild  # Output lib is needed for buld
       
     defaults:
        run:
@@ -659,10 +659,10 @@ jobs:
   # 
   Util-Test-MSBuild:
     runs-on: windows-latest
-    needs:
-      - [ Check-Util-Test-MSBuild]            # To check need to build
-      - [ Util-Library-MSBuild ]              # Output needed, guarnatee Sequential Build
-      - [ Build-Dummy-Library-Using-MSBuild ] # Output lib is needed for buld
+    needs: [ Check-Util-Test-MSBuild, Util-Library-MSBuild, Build-Dummy-Library-Using-MSBuild ]
+      # Check-Util-Test-MSBuild            # To check need to build
+      # Util-Library-MSBuild               # Output needed, guarnatee Sequential Build
+      # Build-Dummy-Library-Using-MSBuild  # Output lib is needed for buld
     defaults:
        run:
          shell: powershell
