@@ -8,7 +8,7 @@ name: Build All Projects
 # - Needs the previous (orderd as mentioned in the file here) build job to 
 #   guarantee a sequential run.
 #   Reason: since every job commits to the repository, if these jobs run concurrently
-#   then commit fails. There is no "technical" dependnecy between them.
+#   then commit fails, even if there is no "technical" dependnecy between them.
 #   One drawback that if a build job fails, next jobs won't run.
 #
 # You can convert Configuration type to build (e.g. BUILD_CONFIGURATION) to a build matrix 
@@ -187,7 +187,9 @@ jobs:
   #
   Info-Tool-Build:
     runs-on: windows-latest
-    needs: [Check-Info-Tool-Build, Build-Dummy-Library-Using-MSBuild]
+    needs: 
+      - [ Check-Info-Tool-Build ]                 # To check need to build
+      - [ Build-Dummy-Library-Using-MSBuild ]     # Guarnatee Sequential Build
     defaults:
        run:
          shell: cmd
@@ -210,7 +212,9 @@ jobs:
       if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
       uses: actions/checkout@v3
               
-    - name: Pull Latest
+    # Pull output of the previous job, to avoid error 
+    # `tip of your current branch is behind its remote counterpart`
+    - name: Pull Latest 
       if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
       run: |
         git pull
@@ -316,7 +320,9 @@ jobs:
   #
   Readout-Tool-Build:
     runs-on: windows-latest
-    needs: [Check-Readout-Tool-Build, Info-Tool-Build]
+    needs: 
+      - [ Check-Readout-Tool-Build]   # To check need to build
+      - [ Info-Tool-Build ]           # Guarnatee Sequential Build
     defaults:
       run:
         shell: cmd
@@ -353,6 +359,13 @@ jobs:
       if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
       uses: actions/checkout@v3
     
+    # Pull output of the previous job, to avoid error 
+    # `tip of your current branch is behind its remote counterpart`
+    - name: Pull Latest 
+      if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
+      run: |
+        git pull
+        
     - name: Install LLVM and Clang, x64
       if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
       uses: KyleMayes/install-llvm-action@v1
@@ -476,7 +489,11 @@ jobs:
   #
   Util-Library-MSBuild:
     runs-on: windows-latest
-    needs: [Check-Util-Library-MSBuild, Readout-Tool-Build]
+    needs: 
+      - [ Check-Util-Library-MSBuild]         # To check need to build
+      - [ Readout-Tool-Build ]                # Guarnatee Sequential Build
+      - [ Build-Dummy-Library-Using-MSBuild ] # Output lib is needed for buld
+      
     defaults:
        run:
          shell: powershell
@@ -509,6 +526,13 @@ jobs:
       if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
       uses: actions/checkout@v3
   
+    # Pull output of the previous job, to avoid error 
+    # `tip of your current branch is behind its remote counterpart`
+    - name: Pull Latest 
+      if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
+      run: |
+        git pull
+        
     - name: Add MSBuild to PATH
       if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
       uses: microsoft/setup-msbuild@v1.1
@@ -635,7 +659,10 @@ jobs:
   # 
   Util-Test-MSBuild:
     runs-on: windows-latest
-    needs: [Check-Util-Test-MSBuild, Util-Library-MSBuild]
+    needs:
+      - [ Check-Util-Test-MSBuild]            # To check need to build
+      - [ Util-Library-MSBuild ]              # Output needed, guarnatee Sequential Build
+      - [ Build-Dummy-Library-Using-MSBuild ] # Output lib is needed for buld
     defaults:
        run:
          shell: powershell
@@ -662,6 +689,13 @@ jobs:
       if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
       uses: actions/checkout@v3
   
+    # Pull output of the previous job, to avoid error 
+    # `tip of your current branch is behind its remote counterpart`
+    - name: Pull Latest 
+      if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
+      run: |
+        git pull
+        
     - name: Add MSBuild to PATH
       if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
       uses: microsoft/setup-msbuild@v1.1
