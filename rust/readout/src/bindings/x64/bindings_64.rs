@@ -77,6 +77,28 @@ pub const CRONO_READ_OK: u32 = 0;
 pub const CRONO_READ_NO_DATA: u32 = 1;
 pub const CRONO_READ_INTERNAL_ERROR: u32 = 2;
 pub const CRONO_READ_TIMEOUT: u32 = 3;
+pub const CRONO_PCIE_RX_ERROR: u32 = 1;
+pub const CRONO_PCIE_BAD_TLP: u32 = 64;
+pub const CRONO_PCIE_BAD_DLLP: u32 = 128;
+pub const CRONO_PCIE_REPLAY_NUM_ROLLOVER: u32 = 256;
+pub const CRONO_PCIE_REPLAY_TIMER_TIMEOUT: u32 = 4096;
+pub const CRONO_PCIE_ADVISORY_NON_FATAL: u32 = 8192;
+pub const CRONO_PCIE_CORRECTED_INTERNAL_ERROR: u32 = 16384;
+pub const CRONO_PCIE_HEADER_LOG_OVERFLOW: u32 = 32768;
+pub const CRONO_PCIE_UNC_UNDEFINED: u32 = 1;
+pub const CRONO_PCIE_UNC_DATA_LINK_PROTOCOL_ERROR: u32 = 16;
+pub const CRONO_PCIE_UNC_SURPRISE_DOWN_ERROR: u32 = 32;
+pub const CRONO_PCIE_UNC_POISONED_TLP: u32 = 4096;
+pub const CRONO_PCIE_UNC_FLOW_CONTROL_PROTOCOL_ERROR: u32 = 8192;
+pub const CRONO_PCIE_UNC_COMPLETION_TIMEOUT: u32 = 16384;
+pub const CRONO_PCIE_UNC_COMPLETER_ABORT: u32 = 32768;
+pub const CRONO_PCIE_UNC_UNEXPECTED_COMPLETION: u32 = 65536;
+pub const CRONO_PCIE_UNC_RECEIVER_OVERFLOW_ERROR: u32 = 131072;
+pub const CRONO_PCIE_UNC_MALFORMED_TLP: u32 = 262144;
+pub const CRONO_PCIE_UNC_ECRC_ERROR: u32 = 524288;
+pub const CRONO_PCIE_UNC_UNSUPPORED_REQUEST_ERROR: u32 = 1048576;
+pub const CRONO_PCIE_CORRECTABLE_FLAG: u32 = 1;
+pub const CRONO_PCIE_UNCORRECTABLE_FLAG: u32 = 2;
 pub const XHPTDC8_API_VERSION: u32 = 1;
 pub const XHPTDC8_STATIC_INFO_VERSION: u32 = 1;
 pub const XHPTDC8_FAST_INFO_VERSION: u32 = 2;
@@ -519,6 +541,140 @@ fn bindgen_test_layout_crono_packet_only_timestamp() {
             stringify!(crono_packet_only_timestamp),
             "::",
             stringify!(timestamp)
+        )
+    );
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct crono_pcie_info {
+    #[doc = " \\brief organizes power supply of PCIe lanes"]
+    pub pwr_mgmt: u32,
+    #[doc = " \\brief Number of PCIe lanes that the card uses."]
+    #[doc = ""]
+    #[doc = " Should be 4 for Ndigo5G"]
+    pub link_width: u32,
+    #[doc = " \\brief Maximum size in bytes for one PCIe transaction"]
+    #[doc = ""]
+    #[doc = " depends on system configuration."]
+    pub max_payload: u32,
+    #[doc = " \\brief Data rate of the PCIe card."]
+    #[doc = ""]
+    #[doc = " depends on system configuration."]
+    pub link_speed: u32,
+    #[doc = " \\brief != 0 if the PCIe error status is supported for this"]
+    #[doc = " device"]
+    pub error_status_supported: u32,
+    #[doc = " \\brief Correctable error status flags, directly from PCIe config"]
+    #[doc = " register"]
+    #[doc = ""]
+    #[doc = " Useful for debugging PCIe problems"]
+    pub correctable_error_status: u32,
+    #[doc = " \\brief Uncorrectable error status flags, directly from PCIe"]
+    #[doc = " config register"]
+    #[doc = ""]
+    #[doc = " Useful for debugging PCIe problems"]
+    pub uncorrectable_error_status: u32,
+    #[doc = " \\brief for future extension"]
+    pub reserved: u32,
+}
+#[test]
+fn bindgen_test_layout_crono_pcie_info() {
+    assert_eq!(
+        ::std::mem::size_of::<crono_pcie_info>(),
+        32usize,
+        concat!("Size of: ", stringify!(crono_pcie_info))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<crono_pcie_info>(),
+        4usize,
+        concat!("Alignment of ", stringify!(crono_pcie_info))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<crono_pcie_info>())).pwr_mgmt as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(crono_pcie_info),
+            "::",
+            stringify!(pwr_mgmt)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<crono_pcie_info>())).link_width as *const _ as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(crono_pcie_info),
+            "::",
+            stringify!(link_width)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<crono_pcie_info>())).max_payload as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(crono_pcie_info),
+            "::",
+            stringify!(max_payload)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<crono_pcie_info>())).link_speed as *const _ as usize },
+        12usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(crono_pcie_info),
+            "::",
+            stringify!(link_speed)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<crono_pcie_info>())).error_status_supported as *const _ as usize
+        },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(crono_pcie_info),
+            "::",
+            stringify!(error_status_supported)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<crono_pcie_info>())).correctable_error_status as *const _
+                as usize
+        },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(crono_pcie_info),
+            "::",
+            stringify!(correctable_error_status)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<crono_pcie_info>())).uncorrectable_error_status as *const _
+                as usize
+        },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(crono_pcie_info),
+            "::",
+            stringify!(uncorrectable_error_status)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<crono_pcie_info>())).reserved as *const _ as usize },
+        28usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(crono_pcie_info),
+            "::",
+            stringify!(reserved)
         )
     );
 }
@@ -1908,7 +2064,6 @@ pub struct xhptdc8_grouping_configuration {
     pub trigger_channel: ::std::os::raw::c_int,
     #[doc = " Use this to define additional trigger channels."]
     #[doc = " There is an OR-disjuction with the trigger_channel."]
-    #[doc = ""]
     pub trigger_channel_bitmask: u64,
     #[doc = " Start of group range relative to the trigger channel."]
     #[doc = " Values in the interval from range_start to range_stop are included in"]
@@ -2673,6 +2828,25 @@ extern "C" {
         index: ::std::os::raw::c_int,
         flash_data: *mut u8,
         size: u32,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " \\defgroup pciefuncts Functions for PCIe information"]
+    #[doc = "\t\\brief reads the PCIe info like correctable and uncorrectable"]
+    #[doc = ""]
+    pub fn xhptdc8_get_pcie_info(
+        index: ::std::os::raw::c_int,
+        pcie_info: *mut crono_pcie_info,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = "\t\\brief clear pci errors, only useful for PCIE problem debuggin"]
+    #[doc = "  flags"]
+    #[doc = "  CRONO_PCIE_CORRECTABLE_FLAG clear all correctable errors"]
+    #[doc = "  CRONO_PCIE_UNCORRECTABLE_FLAG clear all uncorrectable errors"]
+    pub fn xhptdc8_clear_pcie_errors(
+        index: ::std::os::raw::c_int,
+        flags: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
