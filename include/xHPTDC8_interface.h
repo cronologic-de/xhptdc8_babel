@@ -957,7 +957,6 @@ typedef struct {
     /**
      * Use this to define additional trigger channels.
      * There is an OR-disjuction with the trigger_channel.
-     *
      */
     uint64_t trigger_channel_bitmask;
 
@@ -1340,6 +1339,20 @@ XHPTDC8_API int xhptdc8_read_user_flash(int index, uint8_t *flash_data,
  */
 XHPTDC8_API int xhptdc8_write_user_flash(int index, uint8_t *flash_data,
                                          uint32_t size);
+
+/*! \defgroup pciefuncts Functions for PCIe information
+ *	\brief reads the PCIe info like correctable and uncorrectable
+ *
+ */
+XHPTDC8_API int xhptdc8_get_pcie_info(int index, crono_pcie_info *pcie_info);
+
+/*!
+ *	\brief clear pci errors, only useful for PCIE problem debuggin
+ *  flags
+ *  CRONO_PCIE_CORRECTABLE_FLAG clear all correctable errors
+ *  CRONO_PCIE_UNCORRECTABLE_FLAG clear all uncorrectable errors
+ */
+XHPTDC8_API int xhptdc8_clear_pcie_errors(int index, int flags);
 
 #ifdef __cplusplus
 }

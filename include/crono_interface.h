@@ -1,10 +1,6 @@
 //
 // Header file containing structs and #defines commonly used by header files of derived CRONO device classes
-// The current driver version for Ndigo devices is 1.4.3.0
-// The current driver version for xTDC4/TimeTagger4 devices is 1.4.1
-// The current driver version for xHPTDC8 devices is 0.18.0.x
-// The current driver version for Ndigo6G devices is 0.1.0.x
-//
+
 
 #ifndef CRONO_COMMON_INTERFACE_H
 #define CRONO_COMMON_INTERFACE_H
@@ -161,6 +157,82 @@ extern "C" {
                 // timestamp of packet creation
                 int64_t timestamp;
         } crono_packet_only_timestamp;
+        /*! \defgroup pcieconst Constant for PCIe information
+         *	\brief contains the PCIe status flags only relevant when
+         *troubleshooting
+         */
+
+#define CRONO_PCIE_RX_ERROR 1 << 0
+#define CRONO_PCIE_BAD_TLP 1 << 6
+#define CRONO_PCIE_BAD_DLLP 1 << 7
+#define CRONO_PCIE_REPLAY_NUM_ROLLOVER 1 << 8
+#define CRONO_PCIE_REPLAY_TIMER_TIMEOUT 1 << 12
+#define CRONO_PCIE_ADVISORY_NON_FATAL 1 << 13
+#define CRONO_PCIE_CORRECTED_INTERNAL_ERROR 1 << 14
+#define CRONO_PCIE_HEADER_LOG_OVERFLOW 1 << 15
+
+#define CRONO_PCIE_UNC_UNDEFINED 1 << 0;
+#define CRONO_PCIE_UNC_DATA_LINK_PROTOCOL_ERROR 1 << 4
+#define CRONO_PCIE_UNC_SURPRISE_DOWN_ERROR 1 << 5
+#define CRONO_PCIE_UNC_POISONED_TLP 1 << 12
+#define CRONO_PCIE_UNC_FLOW_CONTROL_PROTOCOL_ERROR 1 << 13
+#define CRONO_PCIE_UNC_COMPLETION_TIMEOUT 1 << 14
+#define CRONO_PCIE_UNC_COMPLETER_ABORT 1 << 15
+#define CRONO_PCIE_UNC_UNEXPECTED_COMPLETION 1 << 16
+#define CRONO_PCIE_UNC_RECEIVER_OVERFLOW_ERROR 1 << 17
+#define CRONO_PCIE_UNC_MALFORMED_TLP 1 << 18
+#define CRONO_PCIE_UNC_ECRC_ERROR 1 << 19
+#define CRONO_PCIE_UNC_UNSUPPORED_REQUEST_ERROR 1 << 20
+
+
+        typedef struct {
+            /*! \brief organizes power supply of PCIe lanes
+             */
+            uint32_t pwr_mgmt;
+
+            /*! \brief Number of PCIe lanes that the card uses.
+             *
+             * Should be 4 for Ndigo5G
+             */
+            uint32_t link_width;
+
+            /*! \brief Maximum size in bytes for one PCIe transaction
+             *
+             * depends on system configuration.
+             */
+            uint32_t max_payload;
+
+            /*! \brief Data rate of the PCIe card.
+             *
+             * depends on system configuration.
+             */
+            uint32_t link_speed;
+
+            /*! \brief != 0 if the PCIe error status is supported for this
+             * device
+             */
+            uint32_t error_status_supported;
+            /*! \brief Correctable error status flags, directly from PCIe config
+             * register
+             *
+             * Useful for debugging PCIe problems
+             */
+            uint32_t correctable_error_status;
+
+            /*! \brief Uncorrectable error status flags, directly from PCIe
+             * config register
+             *
+             * Useful for debugging PCIe problems
+             */
+            uint32_t uncorrectable_error_status;
+            /*! \brief for future extension */
+            uint32_t reserved;
+
+        } crono_pcie_info;
+
+        /** For clearing PCIe errors*/
+#define CRONO_PCIE_CORRECTABLE_FLAG 1
+#define CRONO_PCIE_UNCORRECTABLE_FLAG 2
 
         /**
         * Returns the legnth of the data array of the packet in multiples of 8 bytes.
