@@ -8,12 +8,16 @@
 
 const int MAX_TRYS_TO_READ_HITS = 1000;
 int64_t* last_hit = nullptr;
+xhptdc8_manager_configuration* mgr_cfg = nullptr;
 
 // utility function to check for error, print error message and exit
 int exit_on_fail(int status, const char* message) {
 	if (status == XHPTDC8_OK)
 		return status;
 	printf("%s: %s\n", message, xhptdc8_get_last_error_message(0));
+	if (mgr_cfg != nullptr) {
+		delete[] mgr_cfg;
+	}
 	if (last_hit != nullptr) {
 		delete[] last_hit;
 	}
@@ -46,7 +50,7 @@ int get_device_count() {
 }
 
 int configure_xhptdc8(int device_count) {
-	xhptdc8_manager_configuration* mgr_cfg = new xhptdc8_manager_configuration;
+	mgr_cfg = new xhptdc8_manager_configuration;
 	xhptdc8_get_default_configuration(mgr_cfg);
 	int general_offset = 50, epsilon = 4;
 
@@ -119,7 +123,7 @@ void print_hit(TDCHit* hit) {
 		printf("Error:\n");
 
 	int64_t diff = last_hit[channel] > 0 ? hit->time - last_hit[channel] : 0;
-	printf("Channel %u - Time %lld - Type 0x%x - Diff %lld", hit->channel, hit->time, hit->type, diff);
+	printf("Channel %u - Time %ld - Type 0x%x - Diff %ld", hit->channel, hit->time, hit->type, diff);
 	last_hit[channel] = hit->time;
 
 	if (adc_data)
@@ -159,7 +163,7 @@ void read_hits_wrapper(int events_per_read) {
 			TDCHit* hit = &(hit_buffer[i]);
 			print_hit(hit);
 			if ((++total_events % 100) == 0)
-				printf("Count: %d - events: %d\n", total_events, hit_count);
+				printf("Count: %d - events: %ld\n", total_events, hit_count);
 		}
 	}
 
@@ -197,6 +201,14 @@ int main(int argc, char* argv[]) {
 
 	//close manager
 	exit_on_fail(xhptdc8_close(),	"Could not close devices-manager.");
+
+    // Cleanup
+	if (last_hit != nullptr) {
+		delete[] last_hit;
+	}
+	if (mgr_cfg != nullptr) {
+		delete[] mgr_cfg;
+	}
 
 	return 0;
 }

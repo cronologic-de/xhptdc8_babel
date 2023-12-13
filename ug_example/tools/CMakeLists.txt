@@ -47,7 +47,7 @@ ENDIF()
 
 # Add the EXE ytarget  ________________________________________________________
 add_executable(${CRONO_TARGET_NAME} 
-        ${PROJ_SRC_INDIR}/src/xhptdc8_user_guide_example.cpp)
+        ../src/xhptdc8_user_guide_example.cpp)
 
 # Windows-specific Configurations _____________________________________________
 IF ( CRONO_GEN_PLATFORM  STREQUAL "windows")
