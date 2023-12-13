@@ -123,7 +123,7 @@ void print_hit(TDCHit* hit) {
 		printf("Error:\n");
 
 	int64_t diff = last_hit[channel] > 0 ? hit->time - last_hit[channel] : 0;
-	printf("Channel %u - Time %ld - Type 0x%x - Diff %ld", hit->channel, hit->time, hit->type, diff);
+	printf("Channel %u - Time %lld - Type 0x%x - Diff %lld", hit->channel, hit->time, hit->type, diff);
 	last_hit[channel] = hit->time;
 
 	if (adc_data)
