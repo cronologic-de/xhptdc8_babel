@@ -44,11 +44,11 @@ jobs:
       
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v35
+      uses: tj-actions/changed-files@v42
       with:
         files: |
           include/**
@@ -89,7 +89,7 @@ jobs:
 
     - name: Checkout Code
       if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed != 'N' }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Add MSBuild to PATH
       if: ${{needs.Check-Build-Dummy-Library-Using-MSBuild.outputs.ok_to_proceed != 'N' }}
@@ -131,11 +131,11 @@ jobs:
       
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v35
+      uses: tj-actions/changed-files@v42
       with:
         files: |
           include/**
@@ -174,7 +174,7 @@ jobs:
         
     - name: Checkout Code
       if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
               
     - name: Pull Latest 
       if: ${{needs.Check-Info-Tool-Build.outputs.ok_to_proceed != 'N' }}
@@ -220,11 +220,11 @@ jobs:
       
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v35
+      uses: tj-actions/changed-files@v42
       with:
         files: |
           include/**
@@ -270,7 +270,7 @@ jobs:
         
     - name: Checkout Code
       if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Pull Latest 
       if: ${{needs.Check-Readout-Tool-Build.outputs.ok_to_proceed != 'N' }}
@@ -330,11 +330,11 @@ jobs:
       
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v35
+      uses: tj-actions/changed-files@v42
       with:
         files: |
           include/**
@@ -380,7 +380,7 @@ jobs:
         
     - name: Checkout Code
       if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
   
     - name: Pull Latest 
       if: ${{needs.Check-Util-Library-MSBuild.outputs.ok_to_proceed != 'N' }}
@@ -445,11 +445,11 @@ jobs:
       
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v35
+      uses: tj-actions/changed-files@v42
       with:
         files: |
           include/**
@@ -491,7 +491,7 @@ jobs:
         
     - name: Checkout Code
       if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
   
     - name: Pull Latest 
       if: ${{needs.Check-Util-Test-MSBuild.outputs.ok_to_proceed != 'N' }}
