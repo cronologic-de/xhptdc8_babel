@@ -340,10 +340,9 @@ XHPTDC8_API int xhptdc8_read_hits(TDCHit *hit_buf, size_t read_max);
  *
  * @returns Returns the number of read hits.
  */
-XHPTDC8_API int xhptdc8_read_group_matrix(
-    int64_t *absolute_trigger_timestamp, int32_t *hit_counter,
-    int64_t *tdc_array, int32_t *adc_counter, int32_t *adc_value,
-    int32_t number_of_tdcs, int32_t number_of_channels, int32_t number_of_hits);
+XHPTDC8_API int xhptdc8_read_group_matrix(int64_t *absolute_trigger_timestamp, int32_t *hit_counter, int64_t *tdc_array,
+                                          int32_t *adc_counter, int32_t *adc_value, int32_t number_of_tdcs,
+                                          int32_t number_of_channels, int32_t number_of_hits);
 
 /**
  * Finalize the driver for this device.
@@ -723,8 +722,7 @@ typedef struct {
  *
  * @returns XHPTDC8_OK in case of success, or error code in case of error.
  */
-XHPTDC8_API int xhptdc8_get_temperature_info(int index,
-                                             xhptdc8_temperature_info *info);
+XHPTDC8_API int xhptdc8_get_temperature_info(int index, xhptdc8_temperature_info *info);
 
 /**
  * Contains information about the active clock source.
@@ -1231,8 +1229,7 @@ typedef struct {
  *
  * @returns XHPTDC8_OK in case of success, or error code in case of error.
  */
-XHPTDC8_API int
-xhptdc8_get_default_configuration(xhptdc8_manager_configuration *mgr_config);
+XHPTDC8_API int xhptdc8_get_default_configuration(xhptdc8_manager_configuration *mgr_config);
 
 /**
  * Gets current configuration. Copies the current configuration to the specified
@@ -1242,8 +1239,7 @@ xhptdc8_get_default_configuration(xhptdc8_manager_configuration *mgr_config);
  *
  * @returns XHPTDC8_OK in case of success, or error code in case of error.
  */
-XHPTDC8_API int
-xhptdc8_get_current_configuration(xhptdc8_manager_configuration *mgr_config);
+XHPTDC8_API int xhptdc8_get_current_configuration(xhptdc8_manager_configuration *mgr_config);
 
 /**
  * Configures the xHPTDC8 manager. The config information is copied, so can be
@@ -1267,8 +1263,7 @@ XHPTDC8_API int xhptdc8_configure(xhptdc8_manager_configuration *mgr_config);
  * @returns The number of boards present in the system that are supported by
  * this driver.
  */
-XHPTDC8_API int xhptdc8_count_devices(int *error_code,
-                                      const char **error_message);
+XHPTDC8_API int xhptdc8_count_devices(int *error_code, const char **error_message);
 
 /**	Sets up the standard parameters.
  *
@@ -1279,8 +1274,7 @@ XHPTDC8_API int xhptdc8_count_devices(int *error_code,
  *
  * @returns XHPTDC8_OK in case of success, or error code in case of error.
  */
-XHPTDC8_API int
-xhptdc8_get_default_init_parameters(xhptdc8_manager_init_parameters *init);
+XHPTDC8_API int xhptdc8_get_default_init_parameters(xhptdc8_manager_init_parameters *init);
 
 /**
  * Opens and initializes all xHPTDC8-PCIe boards.
@@ -1323,8 +1317,7 @@ XHPTDC8_API const char *xhptdc8_device_state_to_str(int state);
  *
  * @returns XHPTDC8_OK in case of success, or error code in case of error.
  */
-XHPTDC8_API int xhptdc8_read_user_flash(int index, uint8_t *flash_data,
-                                        uint32_t size);
+XHPTDC8_API int xhptdc8_read_user_flash(int index, uint8_t *flash_data, uint32_t size);
 
 /**
  * Write to area of device flash reserved for user data
@@ -1337,8 +1330,7 @@ XHPTDC8_API int xhptdc8_read_user_flash(int index, uint8_t *flash_data,
  *
  * @returns XHPTDC8_OK in case of success, or error code in case of error.
  */
-XHPTDC8_API int xhptdc8_write_user_flash(int index, uint8_t *flash_data,
-                                         uint32_t size);
+XHPTDC8_API int xhptdc8_write_user_flash(int index, uint8_t *flash_data, uint32_t size);
 
 /*! \defgroup pciefuncts Functions for PCIe information
  *	\brief reads the PCIe info like correctable and uncorrectable
@@ -1353,6 +1345,10 @@ XHPTDC8_API int xhptdc8_get_pcie_info(int index, crono_pcie_info *pcie_info);
  *  CRONO_PCIE_UNCORRECTABLE_FLAG clear all uncorrectable errors
  */
 XHPTDC8_API int xhptdc8_clear_pcie_errors(int index, int flags);
+
+/*! Return current internal timestamp counter value of selected xHPTDC8 device in picoseconds.
+ */
+XHPTDC8_API int xhptdc8_get_current_timestamp(int index, int64_t *timestamp);
 
 #ifdef __cplusplus
 }
