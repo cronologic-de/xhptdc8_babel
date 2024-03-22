@@ -298,8 +298,10 @@ pub type uint_fast32_t = ::std::os::raw::c_uint;
 pub type uint_fast64_t = ::std::os::raw::c_ulonglong;
 pub type intmax_t = ::std::os::raw::c_longlong;
 pub type uintmax_t = ::std::os::raw::c_ulonglong;
+#[doc = " data type used for boolean values in data structures"]
 pub type crono_bool_t = u8;
-#[doc = " Basic device data structure for synchronizing cronologic Ndigo5G and HPTDC8 devices"]
+#[doc = " Basic device data structure for synchronizing cronologic Ndigo5G and"]
+#[doc = " HPTDC8 devices."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct crono_device {
@@ -544,35 +546,39 @@ fn bindgen_test_layout_crono_packet_only_timestamp() {
         )
     );
 }
+#[doc = " @ingroup readstructs"]
+#[doc = "  @brief Structure containing PCIe information"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct crono_pcie_info {
-    #[doc = " \\brief organizes power supply of PCIe lanes"]
+    #[doc = " @brief organizes power supply of PCIe lanes"]
     pub pwr_mgmt: u32,
-    #[doc = " \\brief Number of PCIe lanes that the card uses."]
+    #[doc = " @brief Number of PCIe lanes that the card uses."]
     #[doc = ""]
-    #[doc = " Should be 4 for Ndigo5G"]
+    #[doc = "  Should be 4 for Ndigo5G"]
     pub link_width: u32,
-    #[doc = " \\brief Maximum size in bytes for one PCIe transaction"]
+    #[doc = " @brief Maximum size in bytes for one PCIe transaction."]
     #[doc = ""]
-    #[doc = " depends on system configuration."]
+    #[doc = "  Depends on the system configuration."]
     pub max_payload: u32,
-    #[doc = " \\brief Data rate of the PCIe card."]
+    #[doc = " @brief Data rate of the PCIe card."]
     #[doc = ""]
-    #[doc = " depends on system configuration."]
+    #[doc = "  Depends on the system configuration."]
     pub link_speed: u32,
-    #[doc = " \\brief != 0 if the PCIe error status is supported for this"]
-    #[doc = " device"]
+    #[doc = "  @brief Different from 0 if the PCIe error status is supported for this device"]
     pub error_status_supported: u32,
-    #[doc = " \\brief Correctable error status flags, directly from PCIe config"]
-    #[doc = " register"]
+    #[doc = " \\brief Correctable error status flags, directly from the PCIe config"]
+    #[doc = "  register"]
     #[doc = ""]
-    #[doc = " Useful for debugging PCIe problems"]
+    #[doc = "  Useful for debugging PCIe problems. 0, if no error is present,"]
+    #[doc = "  otherwise one of @link pciecorrectableerrors CRONO_PCIE_* @endlink."]
     pub correctable_error_status: u32,
-    #[doc = " \\brief Uncorrectable error status flags, directly from PCIe"]
-    #[doc = " config register"]
+    #[doc = " @brief Uncorrectable error status flags, directly from the PCIe"]
+    #[doc = "  config register."]
     #[doc = ""]
-    #[doc = " Useful for debugging PCIe problems"]
+    #[doc = "  Useful for debugging PCIe problems. 0, if no error is present,"]
+    #[doc = "  otherwise one of @link pcieuncorrectableerrors CRONO_PCIE_UNC_*"]
+    #[doc = "  @endlink."]
     pub uncorrectable_error_status: u32,
     #[doc = " \\brief for future extension"]
     pub reserved: u32,
@@ -2847,6 +2853,13 @@ extern "C" {
     pub fn xhptdc8_clear_pcie_errors(
         index: ::std::os::raw::c_int,
         flags: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " Return current internal timestamp counter value of selected xHPTDC8 device in picoseconds."]
+    pub fn xhptdc8_get_current_timestamp(
+        index: ::std::os::raw::c_int,
+        timestamp: *mut i64,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
