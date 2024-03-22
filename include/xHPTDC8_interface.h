@@ -1353,5 +1353,5 @@ XHPTDC8_API int xhptdc8_get_current_timestamp(int index, int64_t *timestamp);
 #ifdef __cplusplus
 }
 #endif
-  
+
 #endif
