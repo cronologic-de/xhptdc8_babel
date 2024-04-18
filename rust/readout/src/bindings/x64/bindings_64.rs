@@ -2409,8 +2409,8 @@ pub struct xhptdc8_device_configuration {
     #[doc = ""]
     #[doc = " There are two parameters: M = auto_trigger_period"]
     #[doc = " and N = auto_trigger_random_exponent that result in a distance"]
-    #[doc = " between triggers of T clock cycles. T = 1 + M + [1...2^N] clock"]
-    #[doc = " cycles. 0 <= M < 2^32 0 <= N < 32 There is no enable or reset. The"]
+    #[doc = " between triggers of T clock cycles. T = M + [1...2^N] - 1 clock"]
+    #[doc = " cycles. 6 <= M < 2^32 0 <= N < 32 There is no enable or reset. The"]
     #[doc = " auto trigger is running continously. The usage of this trigger can be"]
     #[doc = " configured in the channels."]
     pub auto_trigger_period: ::std::os::raw::c_int,
@@ -2418,8 +2418,8 @@ pub struct xhptdc8_device_configuration {
     #[doc = ""]
     #[doc = " There are two parameters: M = auto_trigger_period"]
     #[doc = " and N = auto_trigger_random_exponent that result in a distance"]
-    #[doc = " between triggers of T clock cycles. T = 1 + M + [1...2^N] clock"]
-    #[doc = " cycles. 0 <= M < 2^32 0 <= N < 32 There is no enable or reset. The"]
+    #[doc = " between triggers of T clock cycles. T = M + [1...2^N] - 1 clock"]
+    #[doc = " cycles. 6 <= M < 2^32 0 <= N < 32 There is no enable or reset. The"]
     #[doc = " auto trigger is running continously. The usage of this trigger can be"]
     #[doc = " configured in the channels."]
     pub auto_trigger_random_exponent: ::std::os::raw::c_int,
