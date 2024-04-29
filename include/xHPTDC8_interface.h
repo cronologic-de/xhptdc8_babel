@@ -1102,8 +1102,8 @@ typedef struct {
      *
      * There are two parameters: M = auto_trigger_period
      * and N = auto_trigger_random_exponent that result in a distance
-     * between triggers of T clock cycles. T = 1 + M + [1...2^N] clock
-     * cycles. 0 <= M < 2^32 0 <= N < 32 There is no enable or reset. The
+     * between triggers of T clock cycles. T = M + [1...2^N] - 1 clock
+     * cycles. 6 <= M < 2^32 0 <= N < 32 There is no enable or reset. The
      * auto trigger is running continously. The usage of this trigger can be
      * configured in the channels.
      */
@@ -1114,8 +1114,8 @@ typedef struct {
      *
      * There are two parameters: M = auto_trigger_period
      * and N = auto_trigger_random_exponent that result in a distance
-     * between triggers of T clock cycles. T = 1 + M + [1...2^N] clock
-     * cycles. 0 <= M < 2^32 0 <= N < 32 There is no enable or reset. The
+     * between triggers of T clock cycles. T = M + [1...2^N] - 1 clock
+     * cycles. 6 <= M < 2^32 0 <= N < 32 There is no enable or reset. The
      * auto trigger is running continously. The usage of this trigger can be
      * configured in the channels.
      */
