@@ -14,3 +14,5 @@ rust/readout/Cargo.lock
 lib/x64/Debug
 lib/x64/Release
 ug_example/bulid
+util/util_unit_test/util_unit_test
+util/util_unit_test/util_unit_test.vcxproj.user

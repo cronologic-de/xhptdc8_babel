@@ -1,4 +1,3 @@
-#include "..\..\pch.h"
 #include "base64.hpp"
 
 #ifdef __clang__

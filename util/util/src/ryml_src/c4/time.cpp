@@ -1,4 +1,3 @@
-#include "..\..\pch.h"
 #include "time.hpp"
 
 #if defined(C4_WIN)

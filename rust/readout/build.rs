@@ -9,7 +9,7 @@ static RUSTC_LINK_SEARCH : &str = "cargo:rustc-link-search=../../lib/x64dummy/" 
 static RUSTC_DRIVER_LIB : &str = "cargo:rustc-link-lib=xhptdc8_driver_64" ;
 
 #[cfg(target_arch="x86_64")]
-static RUSTC_UTIL_LIB : &str = "cargo:rustc-link-lib=xhptdc8_util_64" ;
+static RUSTC_UTIL_LIB : &str = "cargo:rustc-link-lib=xhptdc8_util" ;
 
 #[cfg(target_arch="x86_64")]
 static BINDINGS_FILE_NAME : &str = "bindings_64.rs" ;

@@ -1,6 +1,5 @@
-#include "..\..\..\pch.h"
 #include "parse.hpp"
-#include "..\error.hpp"
+#include "../error.hpp"
 
 #include <ctype.h>
 #include <stdarg.h>

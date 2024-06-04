@@ -3,7 +3,7 @@ set(CRONO_TARGET_NAME "xhptdc8_ugex")
 project(${CRONO_TARGET_NAME})
 
 # _____________________________________________________________________________
-# Build Windows/Linux `xtdc4_ugex.exe/Linux` executable, 
+# Build Windows/Linux `xhptdc8_ugex.exe/Linux` executable, 
 # for (Debug/Release) configurations.
 # _____________________________________________________________________________
 
@@ -30,7 +30,7 @@ ENDIF()
 set(CRONO_DEP_PKG_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${PROJ_SRC_INDIR}/include)
 include_directories(${CRONO_TARGET_NAME} PRIVATE  ${CRONO_DEP_PKG_INC_DIR})
 
-# Link to xtdc4_driver library ________________________________________________
+# Link to xhptdc8_driver library ______________________________________________
 set(CRONO_DEP_PKG_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${PROJ_SRC_INDIR}/lib/x64)
 link_directories(${CRONO_DEP_PKG_LIB_DIR})
 
@@ -59,6 +59,6 @@ ELSEIF (CRONO_GEN_PLATFORM STREQUAL "linux")
         add_compile_options(-fPIC -Wall $<$<CONFIG:Debug>:-g>)
         add_compile_definitions($<$<CONFIG:Debug>:CRONO_DEBUG_ENABLED>)
 
-        # Link to xtdc4_driver library ________________________________________
+        # Link to libxhptdc8_driver library ________________________________________
         target_link_libraries(${CRONO_TARGET_NAME} libxhptdc8_driver.a)
 ENDIF()

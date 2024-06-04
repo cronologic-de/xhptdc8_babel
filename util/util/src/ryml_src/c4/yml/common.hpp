@@ -1,10 +1,9 @@
 #ifndef _C4_YML_COMMON_HPP_
 #define _C4_YML_COMMON_HPP_
 
-#include "..\..\..\pch.h"
 #include <cstddef>
-#include "..\substr.hpp"
-#include "..\export.hpp"
+#include "export.hpp"
+#include "../substr.hpp"
 
 #define RYML_INLINE inline
 

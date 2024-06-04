@@ -16,7 +16,8 @@ namespace get_all_error_messages
 #define hMgr_CLEANUP_BLOCK \
 		xhptdc8_close();
 
-	TEST_CLASS(happy_scenario)
+	// Assumes one and only one card installed on the machine
+	TEST_CLASS(happy_scenario_for_one_card_installed)
 	{
 	public:
 		TEST_METHOD(include_ok_true_fixed_length_true)

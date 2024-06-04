@@ -1,4 +1,3 @@
-#include "..\..\pch.h"
 #include "format.hpp"
 
 #ifdef __clang__

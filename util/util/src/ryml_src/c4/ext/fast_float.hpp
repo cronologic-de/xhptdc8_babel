@@ -11,7 +11,7 @@
 #   pragma GCC diagnostic ignored "-Wuseless-cast"
 #endif
 
-#include "fast_float\include\fast_float\fast_float.h"
+#include "fast_float.h"
 
 #ifdef _MSC_VER
 #   pragma warning(pop)

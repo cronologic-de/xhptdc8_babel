@@ -16,7 +16,7 @@
 #ifndef _C4_YML_COMMON_HPP_
 #include "./common.hpp"
 #endif
-#include "..\substr.hpp"
+#include "../substr.hpp"
 
 
 namespace c4 {

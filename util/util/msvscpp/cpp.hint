@@ -1,3 +1,0 @@
-#define UTILMSVSCPP_API __declspec(dllexport)
-#define UTILMSVSCPP_API __declspec(dllimport)
- 

@@ -2,12 +2,15 @@
 //
 
 #include <iostream>
+#include <cstring>
+#include <vector>
+#include <string>
+#include <istream>
 #include "xhptdc8_util.h"
-#include "xhptdc8_interface.h"
-#include <iostream>
+#include "xHPTDC8_interface.h"
 using namespace std;
 
-int test_apply_yaml(char* src);
+int test_apply_yaml(const char* src);
 int display_all_error_messages(crono_bool_t include_ok, crono_bool_t fixed_length);
 
 void display_intro()
@@ -68,14 +71,25 @@ int main(int argc,  char* argv[])
 		}
 		else if (!strcmp(argv[count], "-yamlentry"))
 		{
-			char buff[4096];
 			display_intro();
 			printf("YAML Entry.\n");
 			printf("Please enter yaml of device configuration (4096 character maximum)\n");
 			printf("To submit the string: press [Tab] then [Enter]:\n");
-			scanf_s("%[^\t]", buff, 4096);
+			std::string input;
+			std::string line;
+			while (true) {
+				std::getline(std::cin, line);
+				if (!line.empty() && line.back() == '\t') {
+					line.pop_back(); // Remove the tab character
+					input += line + "\n";
+					break;
+				}
+				input += line + "\n";
+			}			
+			std::vector<char> cstr(input.begin(), input.end());
+			cstr.push_back('\0'); // Ensure null termination
 			printf("\nCalling xhptdc8_apply_yaml...\n\n");
-			int result = test_apply_yaml(buff);
+			int result = test_apply_yaml(cstr.data());
 			if (result < 0)
 			{
 				printf("Function returned error code <%d>.\n", result);
@@ -91,7 +105,7 @@ int main(int argc,  char* argv[])
 	return 0;
 }
 
-int test_apply_yaml(char* src)
+int test_apply_yaml(const char* src)
 {
 	xhptdc8_manager_init_parameters* params = NULL;
 	int error_code;

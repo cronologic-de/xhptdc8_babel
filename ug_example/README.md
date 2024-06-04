@@ -15,8 +15,6 @@ You can download the user guide from the [product web page](https://www.cronolog
 
 ---
 
----
-
 ## Build the C++ Project
 > **Note**<br>
 > In most cases we recommend using the C++ version of the example `xhptdc8_user_guide_example.cpp`.<br>

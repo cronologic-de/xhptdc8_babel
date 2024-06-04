@@ -5,7 +5,7 @@
 #include "./common.hpp"
 #endif
 
-#include "..\substr.hpp"
+#include "../substr.hpp"
 #include <stdio.h>  // fwrite(), fputc()
 #include <string.h> // memcpy()
 

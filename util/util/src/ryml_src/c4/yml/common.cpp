@@ -1,4 +1,3 @@
-#include "..\..\..\pch.h"
 #include "common.hpp"
 
 #ifndef RYML_NO_DEFAULT_CALLBACKS
