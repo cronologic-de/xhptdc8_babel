@@ -237,8 +237,8 @@ typedef struct {
 
 
 /*!
- * @brief   Packet data structure in ring buffer for packets carrying varying 
- *          amounts of data.
+ * @brief   Packet data structure in the host buffer for packets carrying
+ *          varying amounts of data.
  * @details The size of the data[] array is given in the length field.
  */
 typedef struct {
@@ -286,7 +286,7 @@ typedef struct {
 
 
 /**
-* Packet data structure in ring buffer for packets carrying only the header.
+* Packet data structure in host buffer for packets carrying only the header.
 */
 typedef struct {
     /*! Number of the source channel */
@@ -432,15 +432,16 @@ typedef struct {
 
 /*!
  * @brief   Returns the length of @ref crono_packet::data including its header 
- *          in multiples of 8 bytes.
+ *          in bytes.
  */
 #define crono_packet_bytes(current) ((crono_packet_data_length(current) + 2) * 8)
 
 /*!
  * @brief   Returns a @ref crono_packet pointer pointing to the next packet in
- *          the ring buffer.
- * @details Must be checked before use to not point beyond the last packet in 
- *          the buffer.
+ *          the host buffer.
+ * @details Must be checked before use to not point beyond the last packet of
+ *          the readout data, e.g.,
+ *          `crono_next_packet(current_packet) <= readout_data.last_packet`.
  */
 #define crono_next_packet(current) ((volatile crono_packet*) (((int64_t) (current)) +( ((current)->type&128?0:(current)->length) + 2) * 8))
 /*!
