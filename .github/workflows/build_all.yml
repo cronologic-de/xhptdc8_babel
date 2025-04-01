@@ -87,7 +87,7 @@ jobs:
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v35
+      uses: tj-actions/changed-files@v46.0.3
       with:
         files: |
           include/**
@@ -185,7 +185,7 @@ jobs:
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v35
+      uses: tj-actions/changed-files@v46.0.3
       with:
         files: |
           include/**
@@ -278,7 +278,7 @@ jobs:
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v35
+      uses: tj-actions/changed-files@v46.0.3
       with:
         files: |
           include/**
@@ -417,7 +417,7 @@ jobs:
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v35
+      uses: tj-actions/changed-files@v46.0.3
       with:
         files: |
           include/**
@@ -556,7 +556,7 @@ jobs:
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v42
+      uses: tj-actions/changed-files@v46.0.3
       with:
         files: |
           lib/**
@@ -679,7 +679,7 @@ jobs:
       
     - name: Get changed files in concerned folder(s)
       id: changed-files-specific
-      uses: tj-actions/changed-files@v35
+      uses: tj-actions/changed-files@v46.0.3
       with:
         files: |
           include/**
